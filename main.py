@@ -5,7 +5,11 @@ from fastapi import FastAPI
 from routers.items import router as items_router
 
 
-app = FastAPI()
+app = FastAPI(
+    title="FastAPI Shop",
+    description="Basic FastAPI inventory with filtering and CRUD",
+    version="1.0.0"
+)
 
 app.include_router(items_router)
 
