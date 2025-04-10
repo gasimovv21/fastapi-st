@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 app = FastAPI()
@@ -61,7 +61,11 @@ items = [
 
 class Item(BaseModel):
     name: str
-    price: float
+    price: float = Field(
+        ge=0,  # Greater than or equal to 0
+        le=10000,  # Less than or equal to 10000
+        description="Price of the item must be a positive number"
+    )
 
 
 @app.post(
