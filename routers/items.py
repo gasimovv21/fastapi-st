@@ -1,14 +1,27 @@
-import json
 import aiofiles
+import json
 
 
+from pathlib import Path
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
 from models.item import Item
 from data.items_data import items
 
+from utils.git_versioning import commit_material_change, get_material_changelog
+
 
 router = APIRouter(prefix="/api/items", tags=["Items"])
+
+
+DATA_FILE = Path("data/items.json")
+DATA_DIR = DATA_FILE.parent
+
+
+async def save_items():
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    async with aiofiles.open(DATA_FILE, "w") as f:
+        await f.write(json.dumps(items, indent=4))
 
 
 @router.post(
@@ -23,6 +36,14 @@ async def create_item(new_item: Item):
         "name": new_item.name,
         "price": new_item.price,
     })
+
+    await save_items()
+    commit_material_change(
+        materials_path=DATA_DIR,
+        file_path=DATA_FILE,
+        message="Added new item"
+    )
+
     raise HTTPException(status_code=201, detail="Item created successfully")
 
 
@@ -81,6 +102,13 @@ def filter_items(
     return filtered_items
 
 
+@router.get("/items/changelog", tags=["Items"])
+def get_items_changelog():
+    return {
+        "changelog": get_material_changelog(DATA_DIR, DATA_FILE)
+    }
+
+
 @router.get(
         "/items/{item_id}",
         tags=["Items"],
@@ -105,6 +133,13 @@ async def update_item(item_id: int, updated_item: Item):
         if item["id"] == item_id:
             item["name"] = updated_item.name
             item["price"] = updated_item.price
+
+            await save_items()
+            commit_material_change(
+                materials_path=DATA_DIR,
+                file_path=DATA_FILE,
+                message=f"Updated item: {updated_item.name}",
+            )
             return {"message": "Item updated successfully", "item": item}
     raise HTTPException(status_code=404, detail="Item not found")
 
@@ -119,5 +154,13 @@ async def delete_item(item_id: int):
     for item in items:
         if item["id"] == item_id:
             items.remove(item)
+
+            await save_items()
+            commit_material_change(
+                materials_path=DATA_DIR,
+                file_path=DATA_FILE,
+                message=f"Deleted item: {item['name']}",
+            )
             return {"message": "Item deleted successfully"}
     raise HTTPException(status_code=404, detail="Item not found")
+
