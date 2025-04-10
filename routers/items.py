@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
-router = APIRouter()
+router = APIRouter(prefix="/api/items", tags=["Items"])
 
 
 items = [
@@ -98,6 +98,23 @@ def get_items():
     return items
 
 
+@router.get("/items/filter", tags=["Items"], summary="Filter items")
+def filter_items(
+    min_price: Optional[float] = Query(
+        None, ge=0,
+        description="Minimum price"),
+    max_price: Optional[float] = Query(
+        None, le=10000,
+        description="Maximum price"),
+):
+    filtered_items = items
+    if min_price is not None:
+        filtered_items = [item for item in filtered_items if item["price"] >= min_price]
+    if max_price is not None:
+        filtered_items = [item for item in filtered_items if item["price"] <= max_price]
+    return filtered_items
+
+
 @router.get(
         "/items/{item_id}",
         tags=["Items"],
@@ -138,20 +155,3 @@ def delete_item(item_id: int):
             items.remove(item)
             return {"message": "Item deleted successfully"}
     raise HTTPException(status_code=404, detail="Item not found")
-
-
-@router.get("/items/filter", tags=["Items"], summary="Filter items")
-def filter_items(
-    min_price: Optional[float] = Query(
-        None, ge=0,
-        description="Minimum price"),
-    max_price: Optional[float] = Query(
-        None, le=10000,
-        description="Maximum price"),
-):
-    filtered_items = items
-    if min_price is not None:
-        filtered_items = [item for item in filtered_items if item["price"] >= min_price]
-    if max_price is not None:
-        filtered_items = [item for item in filtered_items if item["price"] <= max_price]
-    return filtered_items
