@@ -42,7 +42,30 @@ def save_items_to_file(file_path: str = "items.json"):
             json.dump(items, file, indent=4)
         return {"message": f"Items saved to {file_path}"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error saving items: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error saving items: {str(e)}"
+        )
+
+
+@router.post("/items/load", tags=["Items"], summary="Load items from file")
+def load_items_from_file(file_path: str = "items.json"):
+    try:
+        with open(file_path, "r") as file:
+            loaded_items = json.load(file)
+            items.clear()
+            items.extend(loaded_items)
+        return {"message": f"Items loaded from {file_path}"}
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"File {file_path} not found"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading items: {str(e)}"
+        )
 
 
 @router.get("/items/filter", tags=["Items"], summary="Filter items")
