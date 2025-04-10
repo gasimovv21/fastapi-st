@@ -1,4 +1,5 @@
 import json
+import aiofiles
 
 
 from fastapi import APIRouter, HTTPException, Query
@@ -16,7 +17,7 @@ router = APIRouter(prefix="/api/items", tags=["Items"])
         summary="Create a new item",
         description="Creates a new item and adds it to the inventory.",
         )
-def create_item(new_item: Item):
+async def create_item(new_item: Item):
     items.append({
         "id": len(items) + 1,
         "name": new_item.name,
@@ -36,36 +37,31 @@ def get_items():
 
 
 @router.post("/items/save", tags=["Items"], summary="Save items to file")
-def save_items_to_file(file_path: str = "items.json"):
+async def save_items_to_file(file_path: str = "items.json"):
     try:
-        with open(file_path, "w") as file:
-            json.dump(items, file, indent=4)
+        async with aiofiles.open(file_path, "w") as f:
+            content = json.dumps(items, indent=4)
+            await f.write(content)
         return {"message": f"Items saved to {file_path}"}
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Error saving items: {str(e)}"
-        )
+            status_code=500, detail=f"Error saving items: {str(e)}")
 
 
 @router.post("/items/load", tags=["Items"], summary="Load items from file")
-def load_items_from_file(file_path: str = "items.json"):
+async def load_items_from_file(file_path: str = "items.json"):
     try:
-        with open(file_path, "r") as file:
-            loaded_items = json.load(file)
+        async with aiofiles.open(file_path, "r") as f:
+            content = await f.read()
+            loaded_items = json.loads(content)
             items.clear()
             items.extend(loaded_items)
         return {"message": f"Items loaded from {file_path}"}
     except FileNotFoundError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"File {file_path} not found"
-        )
+        raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
         raise HTTPException(
-            status_code=500,
-            detail=f"Error loading items: {str(e)}"
-        )
+            status_code=500, detail=f"Error loading items: {str(e)}")
 
 
 @router.get("/items/filter", tags=["Items"], summary="Filter items")
@@ -104,7 +100,7 @@ def get_item(item_id: int):
         summary="Update an item",
         description="Updates an existing item in the inventory.",
         )
-def update_item(item_id: int, updated_item: Item):
+async def update_item(item_id: int, updated_item: Item):
     for item in items:
         if item["id"] == item_id:
             item["name"] = updated_item.name
@@ -119,7 +115,7 @@ def update_item(item_id: int, updated_item: Item):
         summary="Delete an item",
         description="Deletes an item from the inventory.",
         )
-def delete_item(item_id: int):
+async def delete_item(item_id: int):
     for item in items:
         if item["id"] == item_id:
             items.remove(item)
