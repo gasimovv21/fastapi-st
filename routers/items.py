@@ -1,7 +1,8 @@
+import json
+
+
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional
-
-
 from models.item import Item
 from data.items_data import items
 
@@ -32,6 +33,16 @@ def create_item(new_item: Item):
         )
 def get_items():
     return items
+
+
+@router.post("/items/save", tags=["Items"], summary="Save items to file")
+def save_items_to_file(file_path: str = "items.json"):
+    try:
+        with open(file_path, "w") as file:
+            json.dump(items, file, indent=4)
+        return {"message": f"Items saved to {file_path}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving items: {str(e)}")
 
 
 @router.get("/items/filter", tags=["Items"], summary="Filter items")
