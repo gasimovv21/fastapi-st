@@ -64,6 +64,21 @@ class Item(BaseModel):
     price: float
 
 
+@app.post(
+        "/items",
+        tags=["Items"],
+        summary="Create a new item",
+        description="Creates a new item and adds it to the inventory.",
+        )
+def create_item(new_item: Item):
+    items.append({
+        "id": len(items) + 1,
+        "name": new_item.name,
+        "price": new_item.price,
+    })
+    raise HTTPException(status_code=201, detail="Item created successfully")
+
+
 @app.get(
         "/items",
         tags=["Items"],
@@ -87,19 +102,33 @@ def get_item(item_id: int):
     raise HTTPException(status_code=404, detail="Item not found")
 
 
-@app.post(
-        "/items",
+@app.put(
+        "/items/{item_id}",
         tags=["Items"],
-        summary="Create a new item",
-        description="Creates a new item and adds it to the inventory.",
+        summary="Update an item",
+        description="Updates an existing item in the inventory.",
         )
-def create_item(new_item: Item):
-    items.append({
-        "id": len(items) + 1,
-        "name": new_item.name,
-        "price": new_item.price,
-    })
-    return {"message": "Item created successfully", "item": new_item}
+def update_item(item_id: int, updated_item: Item):
+    for item in items:
+        if item["id"] == item_id:
+            item["name"] = updated_item.name
+            item["price"] = updated_item.price
+            return {"message": "Item updated successfully", "item": item}
+    raise HTTPException(status_code=404, detail="Item not found")
+
+
+@app.delete(
+        "/items/{item_id}",
+        tags=["Items"],
+        summary="Delete an item",
+        description="Deletes an item from the inventory.",
+        )
+def delete_item(item_id: int):
+    for item in items:
+        if item["id"] == item_id:
+            items.remove(item)
+            return {"message": "Item deleted successfully"}
+    raise HTTPException(status_code=404, detail="Item not found")
 
 
 if __name__ == "__main__":
